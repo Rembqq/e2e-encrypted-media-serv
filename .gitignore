@@ -1,3 +1,5 @@
+blob-storage/
+*.bin
 .idea
 .env
 application.properties

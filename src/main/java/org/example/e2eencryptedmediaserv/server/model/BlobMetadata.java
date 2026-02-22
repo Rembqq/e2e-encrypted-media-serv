@@ -1,10 +1,18 @@
 package org.example.e2eencryptedmediaserv.server.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.example.e2eencryptedmediaserv.server.util.BlobUploadMetadataJsonConverter;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.time.Instant;
 import java.util.UUID;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "blobs")
 public class BlobMetadata {
@@ -27,8 +35,10 @@ public class BlobMetadata {
     @Column(nullable = false)
     private Instant createdAt;
 
+    @Convert(converter = BlobUploadMetadataJsonConverter.class)
     @Column(columnDefinition = "jsonb")
-    private String metadata;
+    @ColumnTransformer(write = "?::jsonb")
+    private BlobUploadMetadata metadata;
 }
 
 

@@ -1,7 +1,6 @@
 package org.example.e2eencryptedmediaserv.server.repository;
 
 import org.example.e2eencryptedmediaserv.server.model.BlobMetadata;
-import org.hibernate.dialect.lock.OptimisticEntityLockException;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
