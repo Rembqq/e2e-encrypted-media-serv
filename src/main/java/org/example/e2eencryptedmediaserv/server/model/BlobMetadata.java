@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.example.e2eencryptedmediaserv.server.util.BlobUploadMetadataJsonConverter;
-import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -35,9 +35,8 @@ public class BlobMetadata {
     @Column(nullable = false)
     private Instant createdAt;
 
-    @Convert(converter = BlobUploadMetadataJsonConverter.class)
-    @Column(columnDefinition = "jsonb")
-    @ColumnTransformer(write = "?::jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
     private BlobUploadMetadata metadata;
 }
 

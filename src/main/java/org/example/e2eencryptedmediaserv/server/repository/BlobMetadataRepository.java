@@ -10,5 +10,4 @@ import java.util.UUID;
 @Repository
 public interface BlobMetadataRepository extends JpaRepository<BlobMetadata, UUID> {
     Optional<BlobMetadata> findByHash(String hash);
-    boolean existsByHash(String hash);
 }
