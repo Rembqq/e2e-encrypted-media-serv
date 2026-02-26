@@ -7,7 +7,6 @@ import org.example.e2eencryptedmediaserv.server.model.BlobUploadMetadata;
 import org.example.e2eencryptedmediaserv.server.repository.BlobMetadataRepository;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Optional;
@@ -24,7 +23,7 @@ public class BlobService {
     }
 
     @Transactional
-    public BlobMetadata handleUpload(InputStream stream, BlobUploadMetadata meta) throws IOException {
+    public BlobMetadata handleUpload(InputStream stream, BlobUploadMetadata meta) throws Exception {
         Optional<BlobMetadata> existing = repository.findByHash(meta.cipherHash());
 
         if(existing.isPresent()) {

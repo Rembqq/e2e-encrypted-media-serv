@@ -1,37 +1,21 @@
-`./mvnw spring-boot:run`
-`./mvnw flyway:migrate`
+## Як запустити локально
 
-`docker compose ps -a`
-`docker compose up minio`
-`docker compose up postgres`
+### Вимоги
+- Java 21+
+- Docker + docker-compose
+- Maven
 
-`docker compose down -v`
-
-`docker compose up -d`
-
-`docker compose logs postgres --tail=50`
-`docker compose logs minio --tail=50`
-
-`psql -h localhost -p 5433 -U media_user -d media_backup_db`
-
-`docker compose exec postgres psql -U postgres -d media-backup-db`
-`psql -h localhost -p 5433 -U media_user -d media_backup_db`
-`\dt`
-
-`curl -X POST http://localhost:8080/api/v1/blobs \
-  -F "blob=@testfile.bin" \
-  -F 'metadata={
-        "clientId":"alice",
-        "originalFilename":"file.txt",
-        "size":123,
-        "modifiedAt":"2026-02-09T12:00:00Z",
-        "cipherHash":"abc123"
-      };type=application/json'`
-
-`KEY=$(openssl rand -base64 32)`
-```
-mvnw compile exec:java \
--Dexec.mainClass="org.example.e2eencryptedmediaserv.client.BackupClient" \
--Dexec.args="photo.jpg --server http://localhost:8080 --key $KEY --client-id alice"
-
-```
+### Кроки
+1. docker compose up -d
+2. Запуск сервера:
+   `./mvnw spring-boot:run`
+3. Запуск клієнта (приклад):
+   `export TEST_KEY="AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGBkaGxwdHh8="`
+   ```
+   mvn compile exec:java \
+   -Dexec.mainClass="org.example.e2eencryptedmediaserv.client.BackupClient" \
+   -Dexec.args="upload testfile.bin --server http://localhost:8080 --key $TEST_KEY --token dummy-token"
+    ```
+### Зберігання
+- Метадані: таблиця `blobs` в Postgres
+- Блоби: `./blob-storage/` (FileSystem) або MinIO bucket `blobs`

@@ -1,5 +1,6 @@
-package org.example.e2eencryptedmediaserv.server.service;
+package org.example.e2eencryptedmediaserv.server.service.impl;
 
+import org.example.e2eencryptedmediaserv.server.service.BlobStorage;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;

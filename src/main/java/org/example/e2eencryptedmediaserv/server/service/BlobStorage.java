@@ -5,8 +5,8 @@ import java.io.InputStream;
 import java.util.UUID;
 
 public interface BlobStorage {
-    String put(UUID blobId, InputStream stream) throws IOException;
-    InputStream get(String storageKey) throws IOException;
-    void delete(String storageKey) throws IOException;
+    String put(UUID blobId, InputStream stream) throws Exception;
+    InputStream get(String storageKey) throws Exception;
+    void delete(String storageKey) throws Exception;
 
 }
