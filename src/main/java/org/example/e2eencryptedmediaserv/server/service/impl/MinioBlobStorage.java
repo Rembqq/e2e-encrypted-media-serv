@@ -39,38 +39,51 @@ public class MinioBlobStorage implements BlobStorage {
     }
 
     @Override
-    public String put(UUID blobId, InputStream stream) throws Exception {
+    public String put(UUID blobId, InputStream stream) {
         String key = blobId.toString();
 
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(key)
-                        .stream(stream, -1, 10485760)
-                        .contentType("application/octet-stream")
-                        .build()
-        );
-
-        return key;
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(key)
+                            .stream(stream, -1, 10485760)   // -1 = unknown size, 10MB part size
+                            .contentType("application/octet-stream")
+                            .build()
+            );
+            return key;
+        } catch (Exception e) {   // ловимо все, бо перелік великий
+            throw new RuntimeException("Failed to upload blob to MinIO: " + blobId + ", bucket: " + bucketName, e);
+            // або краще — створи свій unchecked exception
+        }
     }
 
     @Override
-    public InputStream get(String storageKey) throws Exception {
-        return minioClient.getObject(
-                GetObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(storageKey)
-                        .build()
-        );
+    public InputStream get(String storageKey) {
+        try {
+            return minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(storageKey)
+                            .build()
+            );
+        } catch (Exception e) {   // ловимо все, бо перелік великий
+            throw new RuntimeException("Failed to get the blob");
+        }
+
     }
 
     @Override
-    public void delete(String storageKey) throws Exception {
-        minioClient.removeObject(
-                RemoveObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(storageKey)
-                        .build()
-        );
+    public void delete(String storageKey) {
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(storageKey)
+                            .build()
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete the blob");
+        }
     }
 }

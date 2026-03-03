@@ -5,7 +5,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
 @Command(
-        name = "backup",
+        name = "easydata",
         mixinStandardHelpOptions = true,
         version = "0.1.0",
         description = "E2E Encrypted Backup CLI",

@@ -1,4 +1,4 @@
-package org.example.e2eencryptedmediaserv.server.model;
+package org.example.e2eencryptedmediaserv.server.model.dto;
 
 import java.time.Instant;
 

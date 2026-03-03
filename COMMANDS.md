@@ -30,8 +30,7 @@
 
 `KEY=$(openssl rand -base64 32)`
 ```
-mvnw compile exec:java \
--Dexec.mainClass="org.example.e2eencryptedmediaserv.client.BackupClient" \
--Dexec.args="photo.jpg --server http://localhost:8080 --key $KEY --client-id alice"
-
+./mvnw compile exec:java \
+  -Dexec.mainClass="org.example.e2eencryptedmediaserv.client.BackupClient" \
+  -Dexec.args="upload testfile.bin --server http://localhost:8080 --key $KEY --token dummy-token"
 ```

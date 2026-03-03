@@ -2,15 +2,13 @@ package org.example.e2eencryptedmediaserv.server.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.e2eencryptedmediaserv.server.model.BlobMetadata;
-import org.example.e2eencryptedmediaserv.server.model.BlobUploadMetadata;
+import org.example.e2eencryptedmediaserv.server.model.dto.BlobUploadMetadata;
 import org.example.e2eencryptedmediaserv.server.service.BlobService;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.service.annotation.PostExchange;
 
 import java.util.Map;
 
@@ -45,11 +43,5 @@ public class BlobController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(response);
-    }
-
-
-    @GetMapping("/helath")
-    public String health() {
-        return "OK";
     }
 }

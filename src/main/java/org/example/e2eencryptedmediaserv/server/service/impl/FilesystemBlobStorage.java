@@ -21,20 +21,33 @@ public class FilesystemBlobStorage implements BlobStorage {
     }
 
     @Override
-    public String put(UUID blobId, InputStream stream) throws IOException {
+    public String put(UUID blobId, InputStream stream) {
         String filename = blobId.toString();
         Path target = root.resolve(filename);
-        Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
+        try {
+            Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new RuntimeException("FilesystemddStorage put method failed");
+        }
+
         return filename;
     }
 
     @Override
-    public InputStream get(String storageKey) throws IOException {
-        return Files.newInputStream(root.resolve(storageKey));
+    public InputStream get(String storageKey) {
+        try {
+            return Files.newInputStream(root.resolve(storageKey));
+        } catch (IOException e) {
+            throw new RuntimeException("MinioBlobStorage put method failed");
+        }
     }
 
     @Override
-    public void delete(String storageKey) throws IOException {
-        Files.deleteIfExists(root.resolve(storageKey));
+    public void delete(String storageKey) {
+        try {
+            Files.deleteIfExists(root.resolve(storageKey));;
+        } catch (IOException e) {
+            throw new RuntimeException("MinioBlobStorage put method failed");
+        }
     }
 }
