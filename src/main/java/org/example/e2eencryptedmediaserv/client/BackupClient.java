@@ -1,5 +1,6 @@
 package org.example.e2eencryptedmediaserv.client;
 
+import org.example.e2eencryptedmediaserv.client.commands.BackupCommand;
 import org.example.e2eencryptedmediaserv.client.commands.UploadCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -9,7 +10,10 @@ import picocli.CommandLine.Command;
         mixinStandardHelpOptions = true,
         version = "0.1.0",
         description = "E2E Encrypted Backup CLI",
-        subcommands = {UploadCommand.class}
+        subcommands = {
+                UploadCommand.class,
+                BackupCommand.class
+        }
 )
 
 public class BackupClient {
