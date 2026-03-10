@@ -30,6 +30,28 @@ services:
       - "${MINIO_CONSOLE_PORT}:9001"
     volumes:
       - minio_data:/data
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: media-backup-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - MINIO_URL=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION_MS=3600000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - minio
 
 volumes:
   postgres_data:

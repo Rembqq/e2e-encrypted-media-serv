@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.Instant;
@@ -27,14 +28,14 @@ public class User implements UserDetails {
     private String username;
 
     @Column(nullable = false)
-    private String password;  // будет храниться в BCrypt
+    private String password;  // BCrypt
 
     private Instant createdAt = Instant.now();
 
     // Для простоты пока без ролей — можно добавить позже
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();// или добавь ROLE_USER и т.д.
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     @Override

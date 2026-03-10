@@ -7,6 +7,7 @@ import org.example.e2eencryptedmediaserv.server.service.BlobService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,6 +30,10 @@ public class BlobController {
             @RequestPart("blob") MultipartFile file,
             @RequestPart("metadata") String metadataJson
             ) throws Exception {
+        System.out.println("POST /blobs вызван. Пользователь: " +
+                SecurityContextHolder.getContext().getAuthentication().getName());
+        System.out.println("Роли: " +
+                SecurityContextHolder.getContext().getAuthentication().getAuthorities());
         BlobUploadMetadata metadata =
                 objectMapper.readValue(metadataJson, BlobUploadMetadata.class);
 

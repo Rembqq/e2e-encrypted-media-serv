@@ -34,3 +34,12 @@
   -Dexec.mainClass="org.example.e2eencryptedmediaserv.client.BackupClient" \
   -Dexec.args="upload testfile.bin --server http://localhost:8080 --key $KEY --token dummy-token"
 ```
+
+`openssl rand -base64 48`
+
+{
+    "username": "testuser",
+    "password": "password123"
+}
+
+{"clientId":"test-client-123","originalFilename":"my-test-file.jpg","size":5242880,"modifiedAt":"2026-03-10T14:30:00Z","cipherHash":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}'
