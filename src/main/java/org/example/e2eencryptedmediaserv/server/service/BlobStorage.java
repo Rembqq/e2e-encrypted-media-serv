@@ -5,8 +5,7 @@ import java.io.InputStream;
 import java.util.UUID;
 
 public interface BlobStorage {
-    String put(UUID blobId, InputStream stream);
+    String put(UUID blobId, InputStream stream, Long userId);
     InputStream get(String storageKey);
     void delete(String storageKey);
-
 }

@@ -5,6 +5,7 @@ import jakarta.transaction.Transactional;
 import org.example.e2eencryptedmediaserv.server.model.BackupFile;
 import org.example.e2eencryptedmediaserv.server.model.BlobMetadata;
 import org.example.e2eencryptedmediaserv.server.model.Snapshot;
+import org.example.e2eencryptedmediaserv.server.model.dto.BlobResponse;
 import org.example.e2eencryptedmediaserv.server.model.dto.BlobUploadMetadata;
 import org.example.e2eencryptedmediaserv.server.model.dto.SnapshotCreateRequest;
 import org.example.e2eencryptedmediaserv.server.model.dto.SnapshotFileRequest;
@@ -37,8 +38,8 @@ public class BlobService {
     }
 
     @Transactional
-    public BlobMetadata handleUpload(InputStream stream, BlobUploadMetadata meta) {
-        Optional<BlobMetadata> existing = blobRepository.findByHash(meta.cipherHash());
+    public BlobMetadata handleUpload(InputStream stream, BlobUploadMetadata meta, Long userId) {
+        Optional<BlobMetadata> existing = blobRepository.findByUserIdAndHash(userId, meta.cipherHash());
 
         if(existing.isPresent()) {
             BlobMetadata blob = existing.get();
@@ -48,7 +49,7 @@ public class BlobService {
 
         UUID id = UUID.randomUUID();
 
-        String storageKey = storage.put(id, stream);
+        String storageKey = storage.put(id, stream, userId);
 
         BlobMetadata blob = new BlobMetadata();
         blob.setId(id);
@@ -58,12 +59,13 @@ public class BlobService {
         blob.setRefcount(1);
         blob.setCreatedAt(Instant.now());
         blob.setMetadata(meta);
+        blob.setUserId(userId);
 
         return blobRepository.save(blob);
     }
 
     @Transactional
-    public Snapshot createSnapshot(SnapshotCreateRequest request) {
+    public Snapshot createSnapshot(SnapshotCreateRequest request, Long userId) {
         if(request.files() == null || request.files().isEmpty()) {
             throw new IllegalArgumentException("Snapshot must contain at least one file");
         }
@@ -80,18 +82,25 @@ public class BlobService {
             Set<String> foundIdsAsString = foundBlobs.stream()
                     .map(b -> b.getId().toString())
                     .collect(Collectors.toSet());
-            Set<String> missingIds = request.files().stream()
-                    .map(SnapshotFileRequest::blobId)
+            Set<String> missingIds = requestBlobUUIds.stream()
+                    .map(UUID::toString)
                     .filter(id -> !foundIdsAsString.contains(id))
                     .collect(Collectors.toSet());
             throw new IllegalArgumentException("The following blob IDs do not exist" + missingIds);
         }
+
+        foundBlobs.forEach(blob -> {
+            if (!blob.getUserId().equals(userId)) {
+                throw new SecurityException("Blob " + blob.getId() + " belongs to another user");
+            }
+        });
 
         // Create
         Snapshot snapshot = new Snapshot();
         snapshot.setName(request.name());
         snapshot.setDescription(request.description());
         snapshot.setCreatedAt(Instant.now());
+        snapshot.setUserId(userId);
 
         long totalSize = request.files().stream()
                 .mapToLong(SnapshotFileRequest::size)
@@ -107,20 +116,23 @@ public class BlobService {
         Map<UUID, BlobMetadata> blobMap = foundBlobs.stream()
                 .collect(Collectors.toMap(BlobMetadata::getId, b -> b));
 
+        Map<UUID, Long> blobUsageCount = new HashMap<>();
         for (SnapshotFileRequest fileReq : request.files()) {
+            UUID blobUuid = UUID.fromString(fileReq.blobId());
 
             String path = fileReq.path();
             if (path == null || path.trim().isEmpty()) {
                 throw new IllegalArgumentException("Path cannot be empty");
             }
-            if (path.contains("..") || path.startsWith("/")) {  // defense from traversal
-                throw new IllegalArgumentException("Invalid path: " + path);
-            }
-            if (path.length() > 1024) {
-                throw new IllegalArgumentException("Path too long: " + path);
-            }
 
-            UUID blobUuid = UUID.fromString(fileReq.blobId());
+            path = path.replaceAll("^/+", "");  // убираем ведущие /
+            path = path.replaceAll("\\.+", ".");  // убираем множественные точки
+            if (path.contains("..") || path.startsWith("/") || path.startsWith("\\")) {
+                throw new IllegalArgumentException("Invalid path: traversal detected");
+            }
+            if (path.length() > 512) {
+                throw new IllegalArgumentException("Path too long");
+            }
 
             BackupFile file = new BackupFile();
             file.setSnapshot(snapshot);
@@ -128,9 +140,11 @@ public class BlobService {
             file.setBlobId(blobUuid);
             file.setSize(fileReq.size());
             file.setModifiedAt(fileReq.modifiedAt());
+            file.setUserId(userId);
 
             backupFileRepository.save(file);
 
+            blobUsageCount.merge(blobUuid, 1L, Long::sum);
             // увеличиваем refcount
             BlobMetadata meta = blobMap.get(blobUuid);
             if (meta == null) {
@@ -144,14 +158,33 @@ public class BlobService {
         return snapshot;
     }
 
-    public Snapshot getSnapshot(Long id) {
-        return snapshotRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Snapshot not found with id:" + id));
+    public List<BlobResponse> getUserBlobs(Long userId) {
+        List<BlobMetadata> blobs = blobRepository.findByUserId(userId);
+
+        return blobs.stream()
+                .map(this::mapToBlobResponse)
+                .toList();
     }
 
-    public List<Snapshot> listSnapshots() {
-        return snapshotRepository.findAllByOrderByCreatedAtDesc();
+    public Snapshot getSnapshot(Long id, Long userId) {
+        return snapshotRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Snapshot with id: " + id + " not found or access denied:"));
+    }
+
+    public List<Snapshot> listSnapshots(Long userId) {
+        return snapshotRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    private BlobResponse mapToBlobResponse(BlobMetadata blob) {
+        return new BlobResponse(
+                blob.getId(),
+                blob.getMetadata().originalFilename(),
+                blob.getSize(),
+                blob.getCreatedAt(),
+                blob.getStorageKey(),
+                blob.getRefcount() > 1
+        );
     }
 
 }

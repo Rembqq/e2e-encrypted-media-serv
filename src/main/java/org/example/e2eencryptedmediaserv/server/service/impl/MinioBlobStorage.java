@@ -39,8 +39,8 @@ public class MinioBlobStorage implements BlobStorage {
     }
 
     @Override
-    public String put(UUID blobId, InputStream stream) {
-        String key = blobId.toString();
+    public String put(UUID blobId, InputStream stream, Long userId) {
+        String key = "user-" + userId + "/blobs/" + blobId.toString();
 
         try {
             minioClient.putObject(

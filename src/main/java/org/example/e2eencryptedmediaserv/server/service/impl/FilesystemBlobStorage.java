@@ -21,7 +21,7 @@ public class FilesystemBlobStorage implements BlobStorage {
     }
 
     @Override
-    public String put(UUID blobId, InputStream stream) {
+    public String put(UUID blobId, InputStream stream, Long userId) {
         String filename = blobId.toString();
         Path target = root.resolve(filename);
         try {

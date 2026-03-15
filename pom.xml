@@ -48,7 +48,7 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>10.17.0</version>
+            <version>11.7.2</version>
         </dependency>
 
         <!-- PostgreSQL JDBC -->
@@ -142,6 +142,7 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
+            <version>11.7.2</version>
         </dependency>
 
         <!-- Source: https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-jackson -->

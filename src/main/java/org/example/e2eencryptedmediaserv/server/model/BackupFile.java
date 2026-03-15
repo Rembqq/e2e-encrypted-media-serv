@@ -23,6 +23,9 @@ public class BackupFile {
     @JoinColumn(name = "snapshot_id", nullable = false)
     private Snapshot snapshot;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     @Column(nullable = false)
     private String path;
 

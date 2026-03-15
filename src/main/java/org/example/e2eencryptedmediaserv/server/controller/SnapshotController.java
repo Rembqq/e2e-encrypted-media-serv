@@ -3,12 +3,18 @@ package org.example.e2eencryptedmediaserv.server.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.e2eencryptedmediaserv.server.model.Snapshot;
+import org.example.e2eencryptedmediaserv.server.model.User;
 import org.example.e2eencryptedmediaserv.server.model.dto.SnapshotCreateRequest;
 import org.example.e2eencryptedmediaserv.server.model.dto.SnapshotResponse;
+import org.example.e2eencryptedmediaserv.server.security.CustomUserDetails;
 import org.example.e2eencryptedmediaserv.server.service.BlobService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.channels.AcceptPendingException;
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @RestController
@@ -19,22 +25,38 @@ public class SnapshotController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public SnapshotResponse create(@Valid @RequestBody SnapshotCreateRequest request) {
-        Snapshot snapshot = blobService.createSnapshot(request);
+    public SnapshotResponse create(@Valid @RequestBody SnapshotCreateRequest request,
+                                   @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = getUserIdFromPrincipal(userDetails);
+        Snapshot snapshot = blobService.createSnapshot(request, userId);
         return mapToResponse(snapshot);
     }
 
     @GetMapping
-    public List<SnapshotResponse> list() {
-        return blobService.listSnapshots().stream()
+    public List<SnapshotResponse> list(@AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = getUserIdFromPrincipal(userDetails);
+        return blobService.listSnapshots(userId)
+                .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
 
     @GetMapping("/{id}")
-    public SnapshotResponse getOne(@PathVariable Long id) {
-        Snapshot snapshot = blobService.getSnapshot(id);
+    public SnapshotResponse getOne(@PathVariable Long id,
+                                   @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = getUserIdFromPrincipal(userDetails);
+        Snapshot snapshot = blobService.getSnapshot(id, userId);
         return mapToResponse(snapshot);
+    }
+
+    private Long getUserIdFromPrincipal(UserDetails userDetails) {
+        if(userDetails == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Not authenticated");
+        }
+        if (userDetails instanceof CustomUserDetails user) {
+            return user.getId();
+        }
+        throw new IllegalStateException("Unknown UserDetails implementation");
     }
 
     private SnapshotResponse mapToResponse(Snapshot s) {
