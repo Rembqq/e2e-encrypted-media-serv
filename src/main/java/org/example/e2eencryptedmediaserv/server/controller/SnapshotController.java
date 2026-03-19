@@ -33,7 +33,7 @@ public class SnapshotController {
     }
 
     @GetMapping
-    public List<SnapshotResponse> list(@AuthenticationPrincipal UserDetails userDetails) {
+    public List<SnapshotResponse> list(@AuthenticationPrincipal CustomUserDetails userDetails) {
         Long userId = getUserIdFromPrincipal(userDetails);
         return blobService.listSnapshots(userId)
                 .stream()
@@ -43,7 +43,7 @@ public class SnapshotController {
 
     @GetMapping("/{id}")
     public SnapshotResponse getOne(@PathVariable Long id,
-                                   @AuthenticationPrincipal UserDetails userDetails) {
+                                   @AuthenticationPrincipal CustomUserDetails userDetails) {
         Long userId = getUserIdFromPrincipal(userDetails);
         Snapshot snapshot = blobService.getSnapshot(id, userId);
         return mapToResponse(snapshot);

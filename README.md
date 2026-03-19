@@ -1,7 +1,7 @@
 ## Як запустити локально
 
 ### Вимоги
-- Java 21+
+- Java 17+
 - Docker + docker-compose
 - Maven
 
@@ -9,7 +9,19 @@
 1. docker compose up -d
 2. Запуск сервера:
    `./mvnw spring-boot:run`
-3. Запуск клієнта (приклад):
+
+## CORS configuration
+
+Frontend applications can access the API from:
+
+- http://localhost:5173 (development)
+- *.vercel.app (production)
+
+Allowed headers:
+- Authorization
+- Content-Type
+
+4. Запуск клієнта (приклад):
    `export TEST_KEY="AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGBkaGxwdHh8="`
    ```
    mvn compile exec:java \

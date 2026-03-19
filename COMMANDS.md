@@ -44,4 +44,4 @@
 
 {"clientId":"test-client-123","originalFilename":"my-test-file.jpg","size":5242880,"modifiedAt":"2026-03-10T14:30:00Z","cipherHash":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
 
-{"clientId":"","originalFilen   ame":"","size":,"modifiedAt":"","cipherHash":""}
+{"clientId":"","originalFilename":"","size":,"modifiedAt":"","cipherHash":""}

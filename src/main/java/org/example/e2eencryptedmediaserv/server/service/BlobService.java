@@ -66,36 +66,61 @@ public class BlobService {
 
     @Transactional
     public Snapshot createSnapshot(SnapshotCreateRequest request, Long userId) {
-        if(request.files() == null || request.files().isEmpty()) {
+        if (request.files() == null || request.files().isEmpty()) {
             throw new IllegalArgumentException("Snapshot must contain at least one file");
         }
 
-        // Збираємо унікальні blobId із запиту
-        Set<UUID> requestBlobUUIds = request.files().stream()
-                .map(SnapshotFileRequest::blobId)
-                .map(UUID::fromString)
+        // 1. Получаем уникальные blobId
+        Set<UUID> requestBlobIds = request.files().stream()
+                .map(f -> UUID.fromString(f.blobId()))
                 .collect(Collectors.toSet());
 
-        List<BlobMetadata> foundBlobs = blobRepository.findAllById(requestBlobUUIds);
+        // 2. Загружаем блобы
+        List<BlobMetadata> foundBlobs = blobRepository.findAllById(requestBlobIds);
 
-        if(foundBlobs.size() != requestBlobUUIds.size()) {
-            Set<String> foundIdsAsString = foundBlobs.stream()
-                    .map(b -> b.getId().toString())
-                    .collect(Collectors.toSet());
-            Set<String> missingIds = requestBlobUUIds.stream()
-                    .map(UUID::toString)
-                    .filter(id -> !foundIdsAsString.contains(id))
-                    .collect(Collectors.toSet());
-            throw new IllegalArgumentException("The following blob IDs do not exist" + missingIds);
+        if (foundBlobs.size() != requestBlobIds.size()) {
+            throw new IllegalArgumentException("Some blob IDs do not exist");
         }
 
-        foundBlobs.forEach(blob -> {
-            if (!blob.getUserId().equals(userId)) {
-                throw new SecurityException("Blob " + blob.getId() + " belongs to another user");
-            }
-        });
+        // 3. Проверяем владельца + размер блоба
+        Map<UUID, BlobMetadata> blobMap = foundBlobs.stream()
+                .collect(Collectors.toMap(BlobMetadata::getId, b -> b));
 
-        // Create
+        for (SnapshotFileRequest fileReq : request.files()) {
+            UUID blobUuid = UUID.fromString(fileReq.blobId());
+            BlobMetadata realBlob = blobMap.get(blobUuid);
+
+            // Проверка владельца
+            if (!realBlob.getUserId().equals(userId)) {
+                throw new SecurityException("Blob " + blobUuid + " belongs to another user");
+            }
+
+            // Проверка размера — САМАЯ ВАЖНАЯ ПРОВЕРКА
+            if (fileReq.size() == null || !fileReq.size().equals(realBlob.getSize())) {
+                throw new IllegalArgumentException(
+                        "Size mismatch for blob " + blobUuid +
+                                ": expected " + realBlob.getSize() + ", got " + fileReq.size()
+                );
+            }
+
+            // Проверка пути
+            String path = fileReq.path();
+            if (path == null || path.trim().isEmpty()) {
+                throw new IllegalArgumentException("Path cannot be empty");
+            }
+
+            // Нормализация и защита от traversal
+            path = path.replaceAll("^/+", "");           // убираем ведущие слеши
+            path = path.replaceAll("\\.+", ".");         // убираем множественные точки
+            if (path.contains("..") || path.startsWith("/") || path.startsWith("\\")) {
+                throw new IllegalArgumentException("Invalid path: traversal detected - " + path);
+            }
+            if (path.length() > 512) {
+                throw new IllegalArgumentException("Path too long");
+            }
+        }
+
+        // 4. Создаём Snapshot
         Snapshot snapshot = new Snapshot();
         snapshot.setName(request.name());
         snapshot.setDescription(request.description());
@@ -111,28 +136,12 @@ public class BlobService {
 
         snapshot = snapshotRepository.save(snapshot);
 
-        // 5. Создаём BackupFile записи + увеличиваем refcount
-        // Для удобства делаем map UUID → BlobMetadata один раз
-        Map<UUID, BlobMetadata> blobMap = foundBlobs.stream()
-                .collect(Collectors.toMap(BlobMetadata::getId, b -> b));
-
+        // 5. Создаём BackupFile + обновляем refcount
         Map<UUID, Long> blobUsageCount = new HashMap<>();
+
         for (SnapshotFileRequest fileReq : request.files()) {
             UUID blobUuid = UUID.fromString(fileReq.blobId());
-
-            String path = fileReq.path();
-            if (path == null || path.trim().isEmpty()) {
-                throw new IllegalArgumentException("Path cannot be empty");
-            }
-
-            path = path.replaceAll("^/+", "");  // убираем ведущие /
-            path = path.replaceAll("\\.+", ".");  // убираем множественные точки
-            if (path.contains("..") || path.startsWith("/") || path.startsWith("\\")) {
-                throw new IllegalArgumentException("Invalid path: traversal detected");
-            }
-            if (path.length() > 512) {
-                throw new IllegalArgumentException("Path too long");
-            }
+            String path = fileReq.path().replaceAll("^/+", "");
 
             BackupFile file = new BackupFile();
             file.setSnapshot(snapshot);
@@ -145,15 +154,14 @@ public class BlobService {
             backupFileRepository.save(file);
 
             blobUsageCount.merge(blobUuid, 1L, Long::sum);
-            // увеличиваем refcount
-            BlobMetadata meta = blobMap.get(blobUuid);
-            if (meta == null) {
-                throw new IllegalStateException("BlobMetadata disappeared after check");
-            }
-
-            incrementRefCount(meta);
-            blobRepository.save(meta);
         }
+
+        // 6. Обновляем refcount один раз на blob
+        blobUsageCount.forEach((blobId, count) -> {
+            BlobMetadata meta = blobMap.get(blobId);
+            meta.setRefcount(meta.getRefcount() + count.intValue());
+            blobRepository.save(meta);
+        });
 
         return snapshot;
     }
