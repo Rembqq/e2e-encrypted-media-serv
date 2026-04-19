@@ -4,6 +4,7 @@ import { register } from '@/api/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import axios from 'axios'
 import toast from 'react-hot-toast'
 
 export default function RegisterPage() {
@@ -22,8 +23,12 @@ export default function RegisterPage() {
       await register({ username, password })
       toast.success('Account created!')
       navigate('/login')
-    } catch {
-      toast.error('Registration failed')
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        toast.error('Username already taken')
+      } else {
+        toast.error('Server is unavailable, try again later')
+      }
     } finally {
       setLoading(false)
     }

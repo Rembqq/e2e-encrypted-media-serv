@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -22,8 +23,12 @@ export default function LoginPage() {
       const { token } = await login({ username, password })
       localStorage.setItem('token', token)
       navigate('/dashboard')
-    } catch {
-      toast.error('Invalid username or password')
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error('Invalid username or password')
+      } else {
+        toast.error('Server is unavailable, try again later')
+      }
     } finally {
       setLoading(false)
     }

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
+import DashboardPage from '@/pages/DashboardPage'
 import PrivateRoute from '@/components/PrivateRoute'
 
 function App() {
@@ -15,7 +16,7 @@ function App() {
           path="/dashboard"
           element={
             <PrivateRoute>
-              <div>Dashboard — coming soon</div>
+              <DashboardPage />
             </PrivateRoute>
           }
         />
