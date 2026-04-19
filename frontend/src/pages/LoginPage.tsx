@@ -22,7 +22,7 @@ export default function LoginPage() {
     try {
       const { token } = await login({ username, password })
       localStorage.setItem('token', token)
-      navigate('/dashboard')
+      navigate('/master-key')
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         toast.error('Invalid username or password')

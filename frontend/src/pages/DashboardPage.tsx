@@ -5,11 +5,13 @@ import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 
 export default function DashboardPage() {
   const { getUsername, logout } = useAuth()
   const [snapshots, setSnapshots] = useState<Snapshot[]>([])
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
     getSnapshots()
@@ -33,7 +35,7 @@ export default function DashboardPage() {
 
       {/* Actions */}
       <div className="mb-6">
-        <Button disabled>
+        <Button onClick={() => navigate('/backup')}>
           + Create Backup
         </Button>
         <p className="text-xs text-gray-400 mt-1">Coming next week</p>
