@@ -1,9 +1,15 @@
 import api from './axios'
 
 export interface BlobResponse {
-  blobId: number        // Long, не UUID
+  blobId: string
   storageKey: string
   deduped: boolean
+}
+
+export interface BlobDownloadResult {
+  data: ArrayBuffer
+  nonce: Uint8Array<ArrayBuffer>
+  filename: string
 }
 
 export async function uploadBlob(
@@ -16,16 +22,14 @@ export async function uploadBlob(
   const formData = new FormData()
 
   const encryptedBlob = new Blob([encryptedData], { type: 'application/octet-stream' })
-
-  // поле называется "blob" — так требует сервер
   formData.append('blob', encryptedBlob, originalName)
 
   const metadata = {
     clientId: crypto.randomUUID(),
     originalFilename: originalName,
-    size: encryptedBlob.size,   // размер зашифрованного файла
-    modifiedAt: modifiedAt,
-    cipherHash: cipherHash,
+    size: encryptedBlob.size,
+    modifiedAt,
+    cipherHash,
     nonce: btoa(String.fromCharCode(...nonce)),
   }
 
@@ -36,4 +40,23 @@ export async function uploadBlob(
   })
 
   return response.data
+}
+
+export async function downloadBlob(blobId: string): Promise<BlobDownloadResult> {
+  const response = await api.get(`/blobs/${blobId}`, {
+    responseType: 'arraybuffer',
+  })
+
+  const nonce = Uint8Array.from(
+    atob(response.headers['x-nonce']),
+    c => c.charCodeAt(0)
+  ) as Uint8Array<ArrayBuffer>
+
+  const filename = response.headers['x-filename'] ?? 'file'
+
+  return {
+    data: response.data as ArrayBuffer,
+    nonce,
+    filename,
+  }
 }

@@ -1,8 +1,8 @@
 import api from './axios'
 
-export interface SnapshotFileRequest {
+export interface SnapshotFile {
+  blobId: string
   path: string
-  blobId: string    // сервер ожидает String
   size: number
   modifiedAt: string
 }
@@ -10,7 +10,7 @@ export interface SnapshotFileRequest {
 export interface SnapshotCreateRequest {
   name: string
   description?: string
-  files: SnapshotFileRequest[]
+  files: SnapshotFile[]
 }
 
 export interface Snapshot {
@@ -22,8 +22,23 @@ export interface Snapshot {
   fileCount: number
 }
 
+export interface SnapshotDetail {
+  id: number
+  name: string
+  description?: string
+  createdAt: string
+  totalSize: number
+  fileCount: number
+  files: SnapshotFile[]
+}
+
 export const getSnapshots = async (): Promise<Snapshot[]> => {
   const response = await api.get<Snapshot[]>('/snapshots')
+  return response.data
+}
+
+export const getSnapshot = async (id: number): Promise<SnapshotDetail> => {
+  const response = await api.get<SnapshotDetail>(`/snapshots/${id}`)
   return response.data
 }
 

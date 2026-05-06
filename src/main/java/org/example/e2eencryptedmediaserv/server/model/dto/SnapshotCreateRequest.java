@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
 public record SnapshotCreateRequest(
-        @NotBlank String name,                    // "weekly-2025-02-26"
+        @NotBlank String name,
         String description,             // nullable
         @NotEmpty List<SnapshotFileRequest> files
 ) {}

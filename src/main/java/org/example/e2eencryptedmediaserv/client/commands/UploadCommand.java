@@ -1,9 +1,6 @@
 package org.example.e2eencryptedmediaserv.client.commands;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import okhttp3.*;
 import org.example.e2eencryptedmediaserv.client.crypto.EncryptionService;
 import org.example.e2eencryptedmediaserv.client.model.UploadMetadata;
@@ -68,7 +65,7 @@ public class UploadCommand implements Callable<Integer> {
         );
 
         if (blobId != null) {
-            System.out.printf("Success → Blob ID: %s%n", blobId);
+            System.out.printf("Success -> Blob ID: %s%n", blobId);
             System.out.printf("File: %s | Plain hash: %s | Size: %,d bytes%n",
                     originalFilename, encData.plaintextHash(), encData.blob().length);
             return 0;

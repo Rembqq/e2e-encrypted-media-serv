@@ -7,5 +7,6 @@ public record BlobUploadMetadata(
         String originalFilename,
         Long size,
         Instant modifiedAt,
-        String cipherHash
+        String cipherHash,
+        String nonce
 ) {}

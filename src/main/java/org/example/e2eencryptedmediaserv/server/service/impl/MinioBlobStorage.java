@@ -52,9 +52,9 @@ public class MinioBlobStorage implements BlobStorage {
                             .build()
             );
             return key;
-        } catch (Exception e) {   // ловимо все, бо перелік великий
+        } catch (Exception e) {   // catch everything, as the overflow is great
             throw new RuntimeException("Failed to upload blob to MinIO: " + blobId + ", bucket: " + bucketName, e);
-            // або краще — створи свій unchecked exception
+            // potentially better to create my own exception.
         }
     }
 
@@ -67,7 +67,7 @@ public class MinioBlobStorage implements BlobStorage {
                             .object(storageKey)
                             .build()
             );
-        } catch (Exception e) {   // ловимо все, бо перелік великий
+        } catch (Exception e) {   // catch everything
             throw new RuntimeException("Failed to get the blob");
         }
 

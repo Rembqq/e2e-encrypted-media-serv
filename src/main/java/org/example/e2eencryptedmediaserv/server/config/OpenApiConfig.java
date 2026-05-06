@@ -17,7 +17,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("E2E Encrypted Media Service API")
                         .version("1.0")
-                        .description("API для E2E-шифрованого бекапа"))
+                        .description("API for E2E-encrypted backup"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)

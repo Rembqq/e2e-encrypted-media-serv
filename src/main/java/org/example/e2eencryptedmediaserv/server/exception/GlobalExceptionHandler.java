@@ -16,19 +16,19 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // 401 — AuthenticationException (неверный или просроченный токен)
+    // 401 - AuthenticationException (invalid or expired token)
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Map<String, Object>> handleAuthenticationException(AuthenticationException ex) {
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Authentication failed", ex.getMessage());
     }
 
-    // 403 — AccessDeniedException (нет прав, попытка доступа к чужим данным)
+    // 403 — AccessDeniedException (no rights, attempt to access someone else's data)
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDeniedException(AccessDeniedException ex) {
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Access denied", ex.getMessage());
     }
 
-    // 400 — Валидация (@Valid) не прошла
+    // 400 — Validation (@Valid) failed
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    // 400 — IllegalArgumentException (наши кастомные проверки)
+    // 400 — IllegalArgumentException (custom checks)
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid request", ex.getMessage());
@@ -57,14 +57,19 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.NOT_FOUND, "Resource not found", ex.getMessage());
     }
 
-    // 500 — Все остальные непредвиденные ошибки
+    // 500 - All other unexpected errors
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
                 "An unexpected error occurred. Please try again later.");
     }
 
-    // Вспомогательный метод для формирования ответа
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<Map<String, Object>> handleSecurityException(SecurityException ex) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "Access denied", ex.getMessage());
+    }
+
+    // Helper method for generating a response
     private ResponseEntity<Map<String, Object>> buildErrorResponse(HttpStatus status, String error, String message) {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", Instant.now());

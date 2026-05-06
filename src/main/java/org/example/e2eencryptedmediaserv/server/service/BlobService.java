@@ -70,19 +70,19 @@ public class BlobService {
             throw new IllegalArgumentException("Snapshot must contain at least one file");
         }
 
-        // 1. Получаем уникальные blobId
+        // unique blobId
         Set<UUID> requestBlobIds = request.files().stream()
                 .map(f -> UUID.fromString(f.blobId()))
                 .collect(Collectors.toSet());
 
-        // 2. Загружаем блобы
+        // download blobs
         List<BlobMetadata> foundBlobs = blobRepository.findAllById(requestBlobIds);
 
         if (foundBlobs.size() != requestBlobIds.size()) {
             throw new IllegalArgumentException("Some blob IDs do not exist");
         }
 
-        // 3. Проверяем владельца + размер блоба
+        // check owner
         Map<UUID, BlobMetadata> blobMap = foundBlobs.stream()
                 .collect(Collectors.toMap(BlobMetadata::getId, b -> b));
 
@@ -90,12 +90,10 @@ public class BlobService {
             UUID blobUuid = UUID.fromString(fileReq.blobId());
             BlobMetadata realBlob = blobMap.get(blobUuid);
 
-            // Проверка владельца
             if (!realBlob.getUserId().equals(userId)) {
                 throw new SecurityException("Blob " + blobUuid + " belongs to another user");
             }
 
-            // Проверка размера — САМАЯ ВАЖНАЯ ПРОВЕРКА
             if (fileReq.size() == null || !fileReq.size().equals(realBlob.getSize())) {
                 throw new IllegalArgumentException(
                         "Size mismatch for blob " + blobUuid +
@@ -103,15 +101,14 @@ public class BlobService {
                 );
             }
 
-            // Проверка пути
             String path = fileReq.path();
             if (path == null || path.trim().isEmpty()) {
                 throw new IllegalArgumentException("Path cannot be empty");
             }
 
-            // Нормализация и защита от traversal
-            path = path.replaceAll("^/+", "");           // убираем ведущие слеши
-            path = path.replaceAll("\\.+", ".");         // убираем множественные точки
+            // traversal defense
+            path = path.replaceAll("^/+", "");           // remove front slashes
+            path = path.replaceAll("\\.+", ".");         // remove multiple dots
             if (path.contains("..") || path.startsWith("/") || path.startsWith("\\")) {
                 throw new IllegalArgumentException("Invalid path: traversal detected - " + path);
             }
@@ -120,7 +117,6 @@ public class BlobService {
             }
         }
 
-        // 4. Создаём Snapshot
         Snapshot snapshot = new Snapshot();
         snapshot.setName(request.name());
         snapshot.setDescription(request.description());
@@ -136,7 +132,7 @@ public class BlobService {
 
         snapshot = snapshotRepository.save(snapshot);
 
-        // 5. Создаём BackupFile + обновляем refcount
+        // refcount update + snapshot
         Map<UUID, Long> blobUsageCount = new HashMap<>();
 
         for (SnapshotFileRequest fileReq : request.files()) {
@@ -156,7 +152,6 @@ public class BlobService {
             blobUsageCount.merge(blobUuid, 1L, Long::sum);
         }
 
-        // 6. Обновляем refcount один раз на blob
         blobUsageCount.forEach((blobId, count) -> {
             BlobMetadata meta = blobMap.get(blobId);
             meta.setRefcount(meta.getRefcount() + count.intValue());
@@ -164,6 +159,22 @@ public class BlobService {
         });
 
         return snapshot;
+    }
+
+    public BlobWithData getBlobWithData(UUID id, Long userId) {
+        BlobMetadata blob = blobRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Blob not found: " + id));
+
+        if (!blob.getUserId().equals(userId)) {
+            throw new SecurityException("Access denied to blob: " + id);
+        }
+
+        try {
+            byte[] data = storage.get(blob.getStorageKey()).readAllBytes();
+            return new BlobWithData(blob, data);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to read blob data: " + id, e);
+        }
     }
 
     public List<BlobResponse> getUserBlobs(Long userId) {
@@ -178,6 +189,11 @@ public class BlobService {
         return snapshotRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Snapshot with id: " + id + " not found or access denied:"));
+    }
+
+    public List<BackupFile> getSnapshotFiles(Long snapshotId, Long userId) {
+        getSnapshot(snapshotId, userId);
+        return backupFileRepository.findBySnapshotId(snapshotId);
     }
 
     public List<Snapshot> listSnapshots(Long userId) {
@@ -195,4 +211,6 @@ public class BlobService {
         );
     }
 
+    public record BlobWithData(BlobMetadata metadata, byte[] data) {}
 }
+

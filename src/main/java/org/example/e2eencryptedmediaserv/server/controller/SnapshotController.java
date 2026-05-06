@@ -2,9 +2,11 @@ package org.example.e2eencryptedmediaserv.server.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.example.e2eencryptedmediaserv.server.model.BackupFile;
 import org.example.e2eencryptedmediaserv.server.model.Snapshot;
 import org.example.e2eencryptedmediaserv.server.model.User;
 import org.example.e2eencryptedmediaserv.server.model.dto.SnapshotCreateRequest;
+import org.example.e2eencryptedmediaserv.server.model.dto.SnapshotFileRequest;
 import org.example.e2eencryptedmediaserv.server.model.dto.SnapshotResponse;
 import org.example.e2eencryptedmediaserv.server.security.CustomUserDetails;
 import org.example.e2eencryptedmediaserv.server.service.BlobService;
@@ -46,7 +48,26 @@ public class SnapshotController {
                                    @AuthenticationPrincipal CustomUserDetails userDetails) {
         Long userId = getUserIdFromPrincipal(userDetails);
         Snapshot snapshot = blobService.getSnapshot(id, userId);
-        return mapToResponse(snapshot);
+        List<BackupFile> files = blobService.getSnapshotFiles(id, userId);
+
+        List<SnapshotFileRequest> fileRequests = files.stream()
+                .map(f -> new SnapshotFileRequest(
+                        f.getPath(),
+                        f.getBlobId().toString(),
+                        f.getSize(),
+                        f.getModifiedAt()
+                ))
+                .toList();
+
+        return new SnapshotResponse(
+                snapshot.getId(),
+                snapshot.getName(),
+                snapshot.getDescription(),
+                snapshot.getCreatedAt(),
+                snapshot.getTotalSize(),
+                snapshot.getFileCount(),
+                fileRequests
+        );
     }
 
     private Long getUserIdFromPrincipal(UserDetails userDetails) {
@@ -66,7 +87,8 @@ public class SnapshotController {
                 s.getDescription(),
                 s.getCreatedAt(),
                 s.getTotalSize(),
-                s.getFileCount()
+                s.getFileCount(),
+                null
         );
     }
 

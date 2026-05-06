@@ -11,7 +11,7 @@ import java.util.HexFormat;
 
 public class EncryptionService {
     private static final String ALGORITHM = "AES/GCM/NoPadding";
-    private static final int TAG_LENGTH = 128;  // 16 байт
+    private static final int TAG_LENGTH = 128;  // 16 bytes
     private static final int NONCE_LENGTH = 12;
 
     private final SecretKey key;

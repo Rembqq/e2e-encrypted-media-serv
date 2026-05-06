@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface BackupFileRepository extends JpaRepository<BackupFile, Long> {
     List<BackupFile> findBySnapshotIdAndUserId(Long snapshotId, Long userId);
+    List<BackupFile> findBySnapshotId(Long snapshotId);
 }

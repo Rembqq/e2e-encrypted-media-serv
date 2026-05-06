@@ -1,8 +1,6 @@
 package org.example.e2eencryptedmediaserv.client.commands;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import okhttp3.*;
 import org.example.e2eencryptedmediaserv.client.crypto.EncryptionService;
 import org.example.e2eencryptedmediaserv.client.model.UploadMetadata;
@@ -99,11 +97,11 @@ public class BackupCommand implements Callable<Integer> {
                 var encData = crypto.encryptForBackup(plaintext);
 
                 UploadMetadata metadata = new UploadMetadata(
-                        "backup-cli",                      // clientId — можно сделать параметром или env
-                        relative,                          // вместо originalFilename → относительный путь
-                        size,                              // originalSize
-                        modifiedAt,                        // modifiedAt
-                        encData.blobHash()                     // cipherHash = хеш от зашифрованного блоба
+                        "backup-cli",
+                        relative,
+                        size,
+                        modifiedAt,
+                        encData.blobHash()
                 );
 
                 String blobId = CliUtils.uploadBlob(

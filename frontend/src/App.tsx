@@ -5,6 +5,7 @@ import RegisterPage from '@/pages/RegisterPage'
 import MasterKeyPage from '@/pages/MasterKeyPage'
 import DashboardPage from '@/pages/DashboardPage'
 import BackupPage from '@/pages/BackupPage'
+import RestorePage from '@/pages/RestorePage'
 import PrivateRoute from '@/components/PrivateRoute'
 
 function App() {
@@ -35,6 +36,14 @@ function App() {
           element={
             <PrivateRoute requireKey>
               <BackupPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/restore/:id"
+          element={
+            <PrivateRoute requireKey>
+              <RestorePage />
             </PrivateRoute>
           }
         />

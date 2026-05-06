@@ -5,7 +5,8 @@ import { getMasterKey } from '@/crypto/keyStore'
 import { encryptFile, hashBuffer } from '@/crypto/encryption'
 import { uploadBlob } from '@/api/blobs'
 import { createSnapshot } from '@/api/snapshots'
-import type { SnapshotFileRequest } from '@/api/snapshots'
+import type { SnapshotFile } from '@/api/snapshots'
+import axios from 'axios'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import toast from 'react-hot-toast'
@@ -40,7 +41,7 @@ export default function BackupPage() {
     setLoading(true)
     setProgress(0)
 
-    const snapshotFiles: SnapshotFileRequest[] = []
+    const snapshotFiles: SnapshotFile[] = []
 
     try {
       for (let i = 0; i < files.length; i++) {
@@ -58,7 +59,7 @@ export default function BackupPage() {
           )
           
           snapshotFiles.push({
-            blobId: String(result.blobId),  // конвертируем number → string
+            blobId: String(result.blobId),  
             path: file.name,
             size: ciphertext.byteLength,
             modifiedAt: new Date(file.lastModified).toISOString(),
@@ -72,8 +73,17 @@ export default function BackupPage() {
 
       toast.success('Backup created successfully!')
       navigate('/dashboard')
-    } catch {
-      toast.error('Backup failed, please try again')
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const details = error.response?.data?.details
+        if (Array.isArray(details)) {
+          toast.error(details[0])
+        } else {
+          toast.error(error.response?.data?.error ?? 'Backup failed')
+        }
+      } else {
+        toast.error('Backup failed, please try again')
+      }
     } finally {
       setLoading(false)
     }

@@ -1,12 +1,12 @@
 -- V1__full_initial_schema.sql
--- Полная начальная схема базы данных
--- Выполняется с нуля, все таблицы создаются заново
--- Используем IF NOT EXISTS для безопасности повторного запуска
+-- Complete initial database schema
+-- Run from scratch, all tables are recreated
+-- IF NOT EXISTS to ensure safe restarts
 
--- 1. Установка расширения для генерации UUID (если ещё не установлено)
+-- 1. Install the UUID generation extension
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 2. Таблица пользователей (самая базовая, на неё ссылаются все остальные)
+-- 2. The users table (the most basic one, all the others refer to it)
 CREATE TABLE IF NOT EXISTS users (
                                      id BIGSERIAL PRIMARY KEY,
                                      username VARCHAR(255) NOT NULL UNIQUE,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
 
--- 3. Таблица блобов (с user_id сразу)
+-- 3. Blob table
 CREATE TABLE IF NOT EXISTS blobs (
                                      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id BIGINT NOT NULL,
@@ -31,13 +31,13 @@ CREATE TABLE IF NOT EXISTS blobs (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
--- Уникальный индекс по паре (user_id, hash) — per-user дедупликация
+-- Unique index on the pair (user_id, hash) - per-user deduplication
 CREATE UNIQUE INDEX IF NOT EXISTS idx_blobs_user_hash ON blobs (user_id, hash);
 
--- Обычный индекс по user_id для фильтрации
+-- A regular index by user_id for filtering
 CREATE INDEX IF NOT EXISTS idx_blobs_user_id ON blobs (user_id);
 
--- 4. Таблица снапшотов
+-- 4. Snapshots table
 CREATE TABLE IF NOT EXISTS snapshots (
                                          id BIGSERIAL PRIMARY KEY,
                                          user_id BIGINT NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS snapshots (
 CREATE INDEX IF NOT EXISTS idx_snapshots_user_id ON snapshots (user_id);
 CREATE INDEX IF NOT EXISTS idx_snapshots_created_at ON snapshots (created_at DESC);
 
--- 5. Таблица файлов в бэкапах
+-- 5. Table of files in backups
 CREATE TABLE IF NOT EXISTS backup_files (
                                             id BIGSERIAL PRIMARY KEY,
                                             snapshot_id BIGINT NOT NULL,

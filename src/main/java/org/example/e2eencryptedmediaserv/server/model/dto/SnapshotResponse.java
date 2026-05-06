@@ -1,6 +1,7 @@
 package org.example.e2eencryptedmediaserv.server.model.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 public record SnapshotResponse(
         Long id,
@@ -8,6 +9,6 @@ public record SnapshotResponse(
         String description,
         Instant createdAt,
         Long totalSize,
-        Integer fileCount
-        // опционально: List<SnapshotFileResponse> files при детальном запросе
+        Integer fileCount,
+        List<SnapshotFileRequest> files
 ) {}

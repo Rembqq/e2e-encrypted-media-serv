@@ -16,19 +16,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-/**
- * Загальні утиліти для CLI-команд (upload, backup та майбутні).
- * Поки що статичні методи - для простоти.
- * Коли команд стане більше 5 → розглянути впровадження залежностей/сервіси.
- */
-
 public class CliUtils {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final ObjectMapper MAPPER = JsonMapper.builder()
             .addModule(new JavaTimeModule())
             .build();
 
-    private CliUtils() {} // утилитный класс — не инстанцируем
+    private CliUtils() {} // utility class
 
     public static long countRegularFiles(Path root, List<Pattern> excludePatterns) throws IOException {
         class Counter extends SimpleFileVisitor<Path> {
@@ -50,12 +44,12 @@ public class CliUtils {
     public static boolean shouldIncludeFile(Path root, Path path, List<Pattern> excludePatterns) {
         String rel = root.relativize(path).toString();
 
-        // скрытые файлы и папки
+        // hidden files and folders
         if (rel.startsWith(".") || rel.contains("/.")) {
             return false;
         }
 
-        // типичные игнорируемые
+        // typical ignores
         if (rel.contains(".git") || rel.contains("node_modules") || rel.contains("target") ||
                 rel.contains("__pycache__") || rel.contains(".idea") || rel.contains(".vscode")) {
             return false;
@@ -107,14 +101,13 @@ public class CliUtils {
         try (Response resp = HTTP_CLIENT.newCall(req).execute()) {
             if (!resp.isSuccessful()) {
                 String err = resp.body() != null ? resp.body().string() : "[no body]";
-                System.err.printf("Upload failed %d: %s → %s%n", resp.code(), resp.message(), err);
+                System.err.printf("Upload failed %d: %s -> %s%n", resp.code(), resp.message(), err);
                 return null;
             }
 
             String responseBody = resp.body().string();
             System.out.println("Uploaded " + relativePathOrName + " → " + responseBody);
 
-            // Простой парсинг id (замени на нормальный десериализацию позже)
             if (responseBody.contains("\"id\"")) {
                 return responseBody.split("\"id\":\"")[1].split("\"")[0];
             }

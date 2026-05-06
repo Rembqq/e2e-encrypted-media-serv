@@ -15,10 +15,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/blobs")
@@ -44,6 +46,26 @@ public class BlobController {
         List<BlobResponse> blobs = service.getUserBlobs(userId);
 
         return ResponseEntity.ok(blobs);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<byte[]> download(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        var result = service.getBlobWithData(id, currentUser.getId());
+
+        BlobUploadMetadata meta = result.metadata().getMetadata();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header("X-Nonce", meta.nonce())
+                .header("X-Filename", meta.originalFilename())
+                .body(result.data());
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -99,7 +121,7 @@ public class BlobController {
         // cipherHash
         if (metadata.cipherHash() == null || metadata.cipherHash().trim().isEmpty()) {
             errors.add("cipherHash is required");
-        } else if (!metadata.cipherHash().matches("^[0-9a-fA-F]{64}$")) { // пример для SHA-256
+        } else if (!metadata.cipherHash().matches("^[0-9a-fA-F]{64}$")) { // SHA-256 example
             errors.add("cipherHash must be a valid SHA-256 hex string (64 characters)");
         }
 
