@@ -4,8 +4,8 @@ FROM maven:3.9.9-eclipse-temurin-17-alpine AS builder
 WORKDIR /build
 
 COPY pom.xml .
-COPY .mvn .mvn
-COPY mvnw .
+#COPY .mvn .mvn
+#COPY mvnw .
 
 RUN --mount=type=cache,target=/root/.m2 \
     mvn dependency:go-offline -B
