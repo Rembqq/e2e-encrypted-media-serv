@@ -48,3 +48,7 @@ export const createSnapshot = async (
   const response = await api.post<Snapshot>('/snapshots', request)
   return response.data
 }
+
+export const deleteSnapshot = async (id: number): Promise<void> => {
+  await api.delete(`/snapshots/${id}`)
+}

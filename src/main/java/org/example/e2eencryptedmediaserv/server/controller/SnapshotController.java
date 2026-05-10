@@ -43,6 +43,13 @@ public class SnapshotController {
                 .toList();
     }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id,
+                       @AuthenticationPrincipal CustomUserDetails userDetails) {
+        blobService.deleteSnapshot(id, getUserIdFromPrincipal(userDetails));
+    }
+
     @GetMapping("/{id}")
     public SnapshotResponse getOne(@PathVariable Long id,
                                    @AuthenticationPrincipal CustomUserDetails userDetails) {

@@ -65,6 +65,7 @@ public class BlobController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header("X-Nonce", meta.nonce())
                 .header("X-Filename", meta.originalFilename())
+                .header("X-Hash", result.metadata().getHash())
                 .body(result.data());
     }
 

@@ -6,15 +6,18 @@ import { encryptFile, hashBuffer } from '@/crypto/encryption'
 import { uploadBlob } from '@/api/blobs'
 import { createSnapshot } from '@/api/snapshots'
 import type { SnapshotFile } from '@/api/snapshots'
-import axios from 'axios'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { handleApiError } from '@/utils/errorHandler'
 import toast from 'react-hot-toast'
 
 export default function BackupPage() {
   const [files, setFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [eventName, setEventName] = useState('')
+  const [eventDescription, setEventDescription] = useState('')
   const navigate = useNavigate()
 
   const onDrop = useCallback((accepted: File[]) => {
@@ -37,6 +40,10 @@ export default function BackupPage() {
       toast.error('Please select files first')
       return
     }
+    if (!eventName.trim()) {
+      toast.error('Please enter event name')
+      return
+    }
 
     setLoading(true)
     setProgress(0)
@@ -51,76 +58,111 @@ export default function BackupPage() {
         const hash = await hashBuffer(ciphertext)
 
         const result = await uploadBlob(
-            ciphertext,
-            nonce,
-            file.name,
-            hash,
-            new Date(file.lastModified).toISOString()
-          )
-          
-          snapshotFiles.push({
-            blobId: String(result.blobId),  
-            path: file.name,
-            size: ciphertext.byteLength,
-            modifiedAt: new Date(file.lastModified).toISOString(),
-          })
+          ciphertext,
+          nonce,
+          file.name,
+          hash,
+          new Date(file.lastModified).toISOString()
+        )
+
+        snapshotFiles.push({
+          blobId: String(result.blobId),
+          path: file.name,
+          size: ciphertext.byteLength,
+          modifiedAt: new Date(file.lastModified).toISOString(),
+        })
 
         setProgress(i + 1)
       }
 
-      const snapshotName = `backup-${new Date().toISOString().slice(0, 10)}`
-      await createSnapshot({ name: snapshotName, files: snapshotFiles })
+      await createSnapshot({
+        name: eventName.trim(),
+        description: eventDescription.trim() || undefined,
+        files: snapshotFiles,
+      })
 
-      toast.success('Backup created successfully!')
+      toast.success('Evidence documented successfully!')
       navigate('/dashboard')
     } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        const details = error.response?.data?.details
-        if (Array.isArray(details)) {
-          toast.error(details[0])
-        } else {
-          toast.error(error.response?.data?.error ?? 'Backup failed')
-        }
-      } else {
-        toast.error('Backup failed, please try again')
-      }
+      handleApiError(error, 'Upload failed, please try again')
     } finally {
       setLoading(false)
     }
   }
 
+  const progressPercent = files.length > 0
+    ? Math.round((progress / files.length) * 100)
+    : 0
+
   return (
     <div className="min-h-screen p-6">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold">Create Backup</h1>
-        <Button variant="outline" onClick={() => navigate('/dashboard')}>
+        <h1 className="text-2xl font-bold">Document Evidence</h1>
+        <Button variant="outline" onClick={() => navigate('/dashboard')} disabled={loading}>
           Back
         </Button>
       </div>
 
       <div className="flex flex-col gap-6 max-w-xl">
+
+        {}
         <Card>
-          <CardContent className="pt-6">
+          <CardHeader>
+            <CardTitle>Event Information</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <div>
+              <label className="text-sm font-medium mb-1 block">
+                Event name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                placeholder="e.g. Bucha Atrocities 20.03.2022"
+                value={eventName}
+                onChange={e => setEventName(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">
+                Description (optional)
+              </label>
+              <Input
+                placeholder="Additional details about the event"
+                value={eventDescription}
+                onChange={e => setEventDescription(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {}
+        <Card>
+          <CardHeader>
+            <CardTitle>Evidence Files</CardTitle>
+          </CardHeader>
+          <CardContent>
             <div
               {...getRootProps()}
               className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
                 isDragActive
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-300 hover:border-gray-400'
-              }`}
+              } ${loading ? 'pointer-events-none opacity-50' : ''}`}
             >
               <input {...getInputProps()} />
               {isDragActive ? (
                 <p className="text-blue-500">Drop files here...</p>
               ) : (
                 <p className="text-gray-500">
-                  Drag & drop files here, or click to select
+                  Drag & drop evidence files here, or click to select
                 </p>
               )}
             </div>
           </CardContent>
         </Card>
 
+        {}
         {files.length > 0 && (
           <Card>
             <CardHeader>
@@ -141,17 +183,28 @@ export default function BackupPage() {
           </Card>
         )}
 
+        {}
         {loading && (
-          <p className="text-sm text-gray-500">
-            Encrypting and uploading... {progress} / {files.length}
-          </p>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>Encrypting and uploading evidence...</span>
+              <span>{progress} / {files.length}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
         )}
 
         <Button
           onClick={handleBackup}
-          disabled={loading || files.length === 0}
+          disabled={loading || files.length === 0 || !eventName.trim()}
+          className="w-full"
         >
-          {loading ? 'Uploading...' : 'Start Backup'}
+          {loading ? `Uploading... ${progressPercent}%` : 'Submit Evidence'}
         </Button>
       </div>
     </div>

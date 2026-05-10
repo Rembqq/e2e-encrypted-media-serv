@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { register } from '@/api/auth'
+import { handleApiError } from '@/utils/errorHandler'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import axios from 'axios'
 import toast from 'react-hot-toast'
 
 export default function RegisterPage() {
@@ -18,17 +18,17 @@ export default function RegisterPage() {
       toast.error('Please fill in all fields')
       return
     }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters')
+      return
+    }
     setLoading(true)
     try {
       await register({ username, password })
       toast.success('Account created!')
       navigate('/login')
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error.response?.status === 409) {
-        toast.error('Username already taken')
-      } else {
-        toast.error('Server is unavailable, try again later')
-      }
+    } catch (error) {
+      handleApiError(error, 'Registration failed')
     } finally {
       setLoading(false)
     }
@@ -45,12 +45,16 @@ export default function RegisterPage() {
             placeholder="Username"
             value={username}
             onChange={e => setUsername(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+            disabled={loading}
           />
           <Input
             type="password"
             placeholder="Password"
             value={password}
             onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+            disabled={loading}
           />
           <Button onClick={handleSubmit} disabled={loading}>
             {loading ? 'Creating...' : 'Register'}

@@ -1,33 +1,73 @@
-## Як запустити локально
+# E2E Encrypted Backup Service
 
-### Вимоги
-- Java 17+
-- Docker + docker-compose
-- Maven
+A web application for end-to-end encrypted file backup. Files are encrypted in the browser before upload — the server stores only ciphertext and never has access to file contents.
 
-### Кроки
-1. docker compose up -d
-2. Запуск сервера:
-   `./mvnw spring-boot:run`
+## Architecture
 
-## CORS configuration
+- **Frontend** — React + TypeScript + Vite + Web Crypto API
+- **Backend** — Java 21 + Spring Boot 3
+- **Database** — PostgreSQL (metadata)
+- **Storage** — MinIO (encrypted blobs)
+- **Auth** — JWT tokens
 
-Frontend applications can access the API from:
+## How E2EE works
 
-- http://localhost:5173 (development)
-- *.vercel.app (production)
+plaintext file
+→ AES-GCM encrypt (browser, master key)
+→ encrypted blob
+→ upload to server
+→ stored in MinIO
 
-Allowed headers:
-- Authorization
-- Content-Type
+restore:
+download encrypted blob
+→ AES-GCM decrypt (browser, master key)
+→ original file
 
-4. Запуск клієнта (приклад):
-   `export TEST_KEY="AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGBkaGxwdHh8="`
-   ```
-   mvn compile exec:java \
-   -Dexec.mainClass="org.example.e2eencryptedmediaserv.client.BackupClient" \
-   -Dexec.args="upload testfile.bin --server http://localhost:8080 --key $TEST_KEY --token dummy-token"
-    ```
-### Зберігання
-- Метадані: таблиця `blobs` в Postgres
-- Блоби: `./blob-storage/` (FileSystem) або MinIO bucket `blobs`
+The server never sees the decryption key or plaintext.
+
+## Quick start
+
+### Prerequisites
+- Docker + Docker Compose
+- Node.js 18+
+- Java 21
+
+### Run
+
+# Start backend + database + MinIO
+docker-compose up
+
+# Start frontend
+cd frontend
+npm install
+npm run dev
+
+Open http://localhost:5173
+
+## API Endpoints
+
+### Auth
+POST /api/v1/auth/register   — create account
+POST /api/v1/auth/login      — get JWT token
+
+### Blobs
+POST /api/v1/blobs           — upload encrypted blob
+GET  /api/v1/blobs           — list user blobs
+GET  /api/v1/blobs/{id}      — download encrypted blob
+
+### Snapshots
+POST   /api/v1/snapshots        — create snapshot
+GET    /api/v1/snapshots        — list snapshots
+GET    /api/v1/snapshots/{id}   — get snapshot with files
+DELETE /api/v1/snapshots/{id}   — delete snapshot
+
+## Environment variables
+
+See .env.example:
+
+POSTGRES_DB=e2e_backup
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin
+JWT_SECRET=your-secret-key

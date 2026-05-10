@@ -10,6 +10,7 @@ export interface BlobDownloadResult {
   data: ArrayBuffer
   nonce: Uint8Array<ArrayBuffer>
   filename: string
+  serverHash: string
 }
 
 export async function uploadBlob(
@@ -20,7 +21,6 @@ export async function uploadBlob(
   modifiedAt: string
 ): Promise<BlobResponse> {
   const formData = new FormData()
-
   const encryptedBlob = new Blob([encryptedData], { type: 'application/octet-stream' })
   formData.append('blob', encryptedBlob, originalName)
 
@@ -53,10 +53,12 @@ export async function downloadBlob(blobId: string): Promise<BlobDownloadResult> 
   ) as Uint8Array<ArrayBuffer>
 
   const filename = response.headers['x-filename'] ?? 'file'
+  const serverHash = response.headers['x-hash'] ?? ''
 
   return {
     data: response.data as ArrayBuffer,
     nonce,
     filename,
+    serverHash,
   }
 }

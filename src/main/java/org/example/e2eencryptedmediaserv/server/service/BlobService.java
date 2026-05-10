@@ -161,6 +161,33 @@ public class BlobService {
         return snapshot;
     }
 
+    @Transactional
+    public void deleteSnapshot(Long snapshotId, Long userId) {
+        Snapshot snapshot = snapshotRepository.findByIdAndUserId(snapshotId, userId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Snapshot not found or access denied: " + snapshotId));
+
+        List<BackupFile> files = backupFileRepository.findBySnapshotId(snapshotId);
+
+        for (BackupFile file : files) {
+            BlobMetadata blob = blobRepository.findById(file.getBlobId())
+                    .orElse(null);
+
+            if (blob != null) {
+                blob.setRefcount(blob.getRefcount() - 1);
+                if (blob.getRefcount() <= 0) {
+                    storage.delete(blob.getStorageKey());
+                    blobRepository.delete(blob);
+                } else {
+                    blobRepository.save(blob);
+                }
+            }
+        }
+
+        backupFileRepository.deleteAll(files);
+        snapshotRepository.delete(snapshot);
+    }
+
     public BlobWithData getBlobWithData(UUID id, Long userId) {
         BlobMetadata blob = blobRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Blob not found: " + id));
