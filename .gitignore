@@ -5,7 +5,7 @@ dev-commands.md
 *.bin
 .idea
 .env
-application.properties
+application-dev.properties
 .mvn
 HELP.md
 target/
