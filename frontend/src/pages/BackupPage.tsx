@@ -55,7 +55,8 @@ export default function BackupPage() {
         const file = files[i]
 
         const { ciphertext, nonce } = await encryptFile(file, key)
-        const hash = await hashBuffer(ciphertext)
+        const originalBuffer = await file.arrayBuffer()
+        const hash = await hashBuffer(originalBuffer)
 
         const result = await uploadBlob(
           ciphertext,
