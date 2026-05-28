@@ -18,43 +18,57 @@ public class MinioBlobStorage implements BlobStorage {
     private final String bucketName;
 
     public MinioBlobStorage(
-            @Value("${minio.url}")          String url,
-            @Value("${minio.access-key}")          String accessKey,
-            @Value("${minio.secret-key}")          String secretKey,
-            @Value("${minio.bucket}")                   String bucketName
+            @Value("${minio.url}")         String url,
+            @Value("${minio.access-key}")  String accessKey,
+            @Value("${minio.secret-key}")  String secretKey,
+            @Value("${minio.bucket}")      String bucketName,
+            @Value("${minio.region:}")     String region
     ) {
         this.bucketName = bucketName;
 
-        this.minioClient = MinioClient.builder()
+        MinioClient.Builder builder = MinioClient.builder()
                 .endpoint(url)
-                .credentials(accessKey, secretKey)
-                .build();
+                .credentials(accessKey, secretKey);
+
+        if (region != null && !region.isBlank()) {
+            builder.region(region);
+        }
+
+        this.minioClient = builder.build();
     }
 
     @PostConstruct
-    public void init() throws Exception{
-        if(!minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build())) {
-            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+    public void init() throws Exception {
+        try {
+            boolean exists = minioClient.bucketExists(
+                    BucketExistsArgs.builder().bucket(bucketName).build()
+            );
+            if (!exists) {
+                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("MinIO init failed. URL=" + minioClient +
+                    ", bucket=" + bucketName +
+                    ", cause=" + e.getClass().getName() +
+                    ": " + e.getMessage(), e);
         }
     }
 
     @Override
     public String put(UUID blobId, InputStream stream, Long userId) {
         String key = "user-" + userId + "/blobs/" + blobId.toString();
-
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(key)
-                            .stream(stream, -1, 10485760)   // -1 = unknown size, 10MB part size
+                            .stream(stream, -1, 10485760)
                             .contentType("application/octet-stream")
                             .build()
             );
             return key;
-        } catch (Exception e) {   // catch everything, as the overflow is great
+        } catch (Exception e) {
             throw new RuntimeException("Failed to upload blob to MinIO: " + blobId + ", bucket: " + bucketName, e);
-            // potentially better to create my own exception.
         }
     }
 
@@ -67,10 +81,9 @@ public class MinioBlobStorage implements BlobStorage {
                             .object(storageKey)
                             .build()
             );
-        } catch (Exception e) {   // catch everything
+        } catch (Exception e) {
             throw new RuntimeException("Failed to get the blob");
         }
-
     }
 
     @Override
