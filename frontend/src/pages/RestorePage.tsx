@@ -86,7 +86,9 @@ export default function RestorePage() {
 
         const { data, nonce, serverHash } = await downloadBlob(file.blobId)
 
-        const localHash = await hashBuffer(data)
+        const decrypted = await decryptFile(data, key, nonce)
+
+        const localHash = await hashBuffer(decrypted)
         if (serverHash && localHash !== serverHash) {
           updateStatus(file.path, 'failed', localHash)
           toast.error(`Integrity check failed for ${file.path}`)
@@ -95,7 +97,6 @@ export default function RestorePage() {
 
         updateStatus(file.path, 'verified', localHash)
 
-        const decrypted = await decryptFile(data, key, nonce)
         zip.file(file.path, decrypted)
         setProgress(i + 1)
       }
