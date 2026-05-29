@@ -46,7 +46,7 @@ public class SecurityConfig {
 
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
-                "https://e2e-encrypted-media-serv-npoo2rui6-e2e-mv-serv.vercel.app"
+                "https://*.vercel.app"
         ));
 
         config.setAllowedMethods(List.of(
