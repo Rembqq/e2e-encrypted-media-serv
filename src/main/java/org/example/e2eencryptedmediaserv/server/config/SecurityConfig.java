@@ -64,6 +64,12 @@ public class SecurityConfig {
 
         config.setAllowCredentials(true);
 
+        config.setExposedHeaders(List.of(
+                "X-Nonce",
+                "X-Hash",
+                "X-Filename"
+        ));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
 
